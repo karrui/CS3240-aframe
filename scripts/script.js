@@ -1,13 +1,51 @@
 // Add listener to models
 AFRAME.registerComponent('cursor-listener', {
+    init: function () {
+        this.el.addEventListener('click', function (evt) {
+            //console.log('I was clicked at: ', evt.detail.intersection.point);
+            //var test = document.querySelector("#image-360");
+            //test.setAttribute("src", "#sechelt");
+            //console.log(evt.detail.target.getAttribute("data-dest"));
+            transition(evt.detail.target.getAttribute("data-link-to"));
+        });
+    }
+});
+
+var mouseDownTimeout = 1000;
+var currentMouseStatus = false;
+var isMouseDown = false;
+
+AFRAME.registerComponent('mousedown-check', {
+    dependencies: ['raycaster'],
+
+    init: function () {
+        this.el.addEventListener('mousedown', function (evt) {
+            if (!currentMouseStatus) {
+                currentMouseStatus = true;
+                setTimeout(function () {
+                    if (currentMouseStatus) {
+                        mainCamera.getAttribute('wasd-controls').moveTowards = true;
+                    }
+                    currentMouseStatus = false;
+                }, mouseDownTimeout);
+            }
+        });
+
+        this.el.addEventListener('mouseup', function (evt) {
+            currentMouseStatus = false;
+            mainCamera.getAttribute('wasd-controls').moveTowards = false;
+        });
+    }
+});
+
+// Raycaster
+AFRAME.registerComponent('collider-check', {
+  dependencies: ['raycaster'],
+
   init: function () {
-    this.el.addEventListener('click', function (evt) {
-      //console.log('I was clicked at: ', evt.detail.intersection.point);
-        //var test = document.querySelector("#image-360");
-        //test.setAttribute("src", "#sechelt");
-        //console.log(evt.detail.target.getAttribute("data-dest"));
-        transition(evt.detail.target.getAttribute("data-link-to"));
-    });
+//    this.el.addEventListener('raycaster-intersected', function (evt) {
+//      console.log(evt.detail.target);
+//    });
   }
 });
 
@@ -18,31 +56,52 @@ var currentScene = "#scene_landing";
 var mainCamera;
 
 // Init on load
-window.onload = function(e) {
+window.onload = function (e) {
     transitionPlane = document.querySelector('#transition');
     mainCamera = document.querySelector("#camera");
     // Offset with some delay otherwise value will get overriden before it's complete
-    transitionDuration = parseInt(document.querySelector('#transitionAnimation').getAttribute("dur")) + 100;
-    fade();
-    hideScene("#scene_portals");
+    transitionDuration = 500;
+    
+    setTimeout(fadeOut, 100);
+    if (getPageName() == "index.html") {
+        hideScene("#scene_portals");
+    }
+}
+
+function getPageName() {
+    var loc = location.pathname.split("/");
+    return loc[loc.length - 1];
 }
 
 // Fade will toggle between fade out and fade in
-function fade() {
-    transitionPlane.emit('fade');
+function fadeOut() {
+    console.log("fadeout");
+    transitionPlane.emit('fadeOut');
+}
+
+function fadeIn() {
+     if (transitionPlane.getAttribute("material").opacity == 0) { 
+        transitionPlane.emit('fadeIn');
+     }
+}
+
+function fadeInAndOut() {
+    fadeIn();
+    setTimeout(fadeOut, 500);
 }
 
 // Fades out and fades in
 function transition(destinationScene) {
-    fade();
-    setTimeout(function() {
+    fadeIn();
+    setTimeout(function () {
         resetCamera();
-        fade();
+        fadeOut();
         hideScene(currentScene);
         showScene(destinationScene);
         currentScene = destinationScene;
     }, transitionDuration);
 }
+
 
 // Hides a scene given sceneId
 function hideScene(sceneId) {
